@@ -1,0 +1,70 @@
+
+
+# docker-compose.yml
+# This file defines all the services needed for our application
+
+version: '3.8'
+
+services:
+  # MariaDB database service
+  mariadb:
+    image: mariadb:10.6
+    container_name: store_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: onlinestore
+      MYSQL_USER: storeuser
+      MYSQL_PASSWORD: storepass
+    ports:
+      - "3306:3306"
+    volumes:
+      # Persist database data
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # MQTT Broker service
+  mqtt:
+    image: eclipse-mosquitto:2.0
+    container_name: store_mqtt
+    restart: always
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+    command: mosquitto -c /mosquitto/config/mosquitto.conf
+
+  # Our Go API service
+  api:
+    build: .
+    container_name: store_api
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      # Database connection string
+      DATABASE_URL: "storeuser:storepass@tcp(mariadb:3306)/onlinestore"
+      # MQTT broker URL
+      MQTT_BROKER: "tcp://mqtt:1883"
+      # JWT secret for signing tokens
+      JWT_SECRET: "your-super-secret-jwt-key-change-this-in-production"
+      # Port to run on
+      PORT: "8080"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      timeout: 10s
+      retries: 5
+
+volumes:
+  # Named volume for database persistence
+  mariadb_data:
+
