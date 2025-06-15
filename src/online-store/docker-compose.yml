@@ -1,7 +1,5 @@
-
-
 # docker-compose.yml
-# This file defines all the services needed for our application
+# Fixed version with proper MySQL time parsing
 
 version: '3.8'
 
@@ -46,8 +44,8 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Database connection string
-      DATABASE_URL: "storeuser:storepass@tcp(mariadb:3306)/onlinestore"
+      # Fixed database connection string with parseTime=true
+      DATABASE_URL: "storeuser:storepass@tcp(mariadb:3306)/onlinestore?parseTime=true"
       # MQTT broker URL
       MQTT_BROKER: "tcp://mqtt:1883"
       # JWT secret for signing tokens
@@ -67,4 +65,3 @@ services:
 volumes:
   # Named volume for database persistence
   mariadb_data:
-

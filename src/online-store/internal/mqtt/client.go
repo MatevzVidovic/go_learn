@@ -26,10 +26,10 @@ func NewClient(brokerURL string) (*Client, error) {
 
 	// Set up MQTT client options
 	opts := MQTT.NewClientOptions()
-	opts.AddBroker(brokerURL)           // Where to connect
-	opts.SetClientID(clientID)          // Our unique ID
-	opts.SetCleanSession(true)          // Start fresh each time
-	opts.SetAutoReconnect(true)         // Reconnect if connection drops
+	opts.AddBroker(brokerURL)   // Where to connect
+	opts.SetClientID(clientID)  // Our unique ID
+	opts.SetCleanSession(true)  // Start fresh each time
+	opts.SetAutoReconnect(true) // Reconnect if connection drops
 	opts.SetConnectTimeout(10 * time.Second)
 	opts.SetKeepAlive(30 * time.Second)
 
@@ -66,7 +66,7 @@ func (c *Client) Publish(topic string, payload interface{}) error {
 	// QoS 1 means "at least once delivery" - the message will be delivered at least once
 	// false means "not retained" - the broker won't save this message for future subscribers
 	token := c.client.Publish(topic, 1, false, jsonData)
-	
+
 	// Wait for the publish to complete
 	if token.Wait() && token.Error() != nil {
 		return fmt.Errorf("failed to publish message: %w", token.Error())
@@ -82,7 +82,7 @@ func (c *Client) Subscribe(topic string, handler MQTT.MessageHandler) error {
 	// Subscribe to the topic
 	// QoS 1 means we want reliable delivery
 	token := c.client.Subscribe(topic, 1, handler)
-	
+
 	// Wait for the subscription to complete
 	if token.Wait() && token.Error() != nil {
 		return fmt.Errorf("failed to subscribe to topic %s: %w", topic, token.Error())
@@ -103,7 +103,7 @@ func generateClientID() string {
 	// Create a random 8-byte array
 	bytes := make([]byte, 8)
 	rand.Read(bytes)
-	
+
 	// Convert to hex string and add prefix
 	return fmt.Sprintf("store-client-%x", bytes)
 }

@@ -1,5 +1,5 @@
 // internal/database/connection.go
-// This file handles connecting to our MariaDB database
+// Fixed version with proper MySQL time handling
 
 package database
 
@@ -11,29 +11,35 @@ import (
 )
 
 // Connect creates a connection to the database
-// It returns a *sql.DB which is a connection pool, not a single connection
+// Fixed to handle MySQL datetime properly
 func Connect(databaseURL string) (*sql.DB, error) {
+	// Add parseTime=true to handle datetime columns properly
+	// This tells the MySQL driver to parse TIME and DATETIME values to time.Time
+	if databaseURL != "" && !contains(databaseURL, "parseTime=true") {
+		// Add parseTime parameter if not already present
+		separator := "?"
+		if contains(databaseURL, "?") {
+			separator = "&"
+		}
+		databaseURL = databaseURL + separator + "parseTime=true"
+	}
+
 	// Open creates a database connection pool
-	// It doesn't actually connect yet - that happens on first query
 	db, err := sql.Open("mysql", databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
 	// Test the connection by pinging the database
-	// This is where we actually connect for the first time
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	// Set connection pool settings
-	// MaxOpenConns: maximum number of open connections to the database
-	// MaxIdleConns: maximum number of connections in the idle connection pool
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(25)
 
 	// Create tables if they don't exist
-	// In a real app, you'd use migrations, but this is simpler for learning
 	if err := createTables(db); err != nil {
 		return nil, fmt.Errorf("failed to create tables: %w", err)
 	}
@@ -41,28 +47,45 @@ func Connect(databaseURL string) (*sql.DB, error) {
 	return db, nil
 }
 
+// Helper function to check if string contains substring
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr ||
+		(len(s) > len(substr) &&
+			(s[:len(substr)] == substr ||
+				s[len(s)-len(substr):] == substr ||
+				containsAt(s, substr))))
+}
+
+func containsAt(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
+
 // createTables creates all the database tables we need
-// This runs every time the app starts, but only creates tables if they don't exist
 func createTables(db *sql.DB) error {
 	// SQL queries to create our tables
-	// These are the same as in our README, but in Go string format
+	// Fixed datetime handling for better compatibility
 	queries := []string{
 		`CREATE TABLE IF NOT EXISTS users (
 			id INT AUTO_INCREMENT PRIMARY KEY,
 			email VARCHAR(255) UNIQUE NOT NULL,
 			password_hash VARCHAR(255) NOT NULL,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
-		
+
 		`CREATE TABLE IF NOT EXISTS products (
 			id INT AUTO_INCREMENT PRIMARY KEY,
 			name VARCHAR(255) NOT NULL,
 			description TEXT,
 			price_cents INT NOT NULL,
 			stock_quantity INT DEFAULT 0,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
-		
+
 		`CREATE TABLE IF NOT EXISTS orders (
 			id INT AUTO_INCREMENT PRIMARY KEY,
 			user_id INT NOT NULL,
@@ -70,7 +93,7 @@ func createTables(db *sql.DB) error {
 			quantity INT NOT NULL,
 			total_cents INT NOT NULL,
 			status ENUM('pending', 'paid', 'shipped', 'delivered') DEFAULT 'pending',
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (user_id) REFERENCES users(id),
 			FOREIGN KEY (product_id) REFERENCES products(id)
 		)`,
@@ -84,7 +107,6 @@ func createTables(db *sql.DB) error {
 	}
 
 	// Insert some sample products if the products table is empty
-	// This gives us data to work with when testing
 	if err := insertSampleData(db); err != nil {
 		return fmt.Errorf("failed to insert sample data: %w", err)
 	}
@@ -93,7 +115,6 @@ func createTables(db *sql.DB) error {
 }
 
 // insertSampleData adds some example products to the database
-// This only runs if the products table is empty
 func insertSampleData(db *sql.DB) error {
 	// Check if we already have products
 	var count int

@@ -1,0 +1,53 @@
+graph TD
+    %% User Registration Flow
+    subgraph "User Registration Flow"
+        A1[Client sends POST /api/register] --> B1[Gin Router receives request]
+        B1 --> C1[AuthHandler.Register called]
+        C1 --> D1[Validate JSON data]
+        D1 --> E1[AuthService.Register]
+        E1 --> F1[Hash password with bcrypt]
+        F1 --> G1[Save user to database]
+        G1 --> H1[Publish 'user/registered' MQTT event]
+        H1 --> I1[Return user data to client]
+    end
+    
+    %% Authenticated Request Flow
+    subgraph "Authenticated Request Flow (Create Order)"
+        A2[Client sends POST /api/orders with JWT] --> B2[Gin Router]
+        B2 --> C2[Auth Middleware checks JWT token]
+        C2 --> D2{Token Valid?}
+        D2 -->|No| E2[Return 401 Unauthorized]
+        D2 -->|Yes| F2[Extract user_id from token]
+        F2 --> G2[Set user_id in context]
+        G2 --> H2[OrderHandler.CreateOrder]
+        H2 --> I2[OrderService.CreateOrder]
+        I2 --> J2[Start database transaction]
+        J2 --> K2[Check product stock]
+        K2 --> L2[Create order record]
+        L2 --> M2[Update product stock]
+        M2 --> N2[Commit transaction]
+        N2 --> O2[Publish 'order/created' MQTT event]
+        O2 --> P2[Return order data]
+    end
+    
+    %% MQTT Message Flow
+    subgraph "MQTT Message Handling Flow"
+        A3[External system publishes to 'payment/confirmed'] --> B3[MQTT Broker receives message]
+        B3 --> C3[Go API subscribed to topic]
+        C3 --> D3[handlePaymentConfirmed function called]
+        D3 --> E3[Parse JSON message]
+        E3 --> F3[Extract order_id]
+        F3 --> G3[OrderService.UpdateOrderStatus]
+        G3 --> H3[Update order in database]
+        H3 --> I3[Publish 'order/status_changed' event]
+    end
+    
+    %% Error Handling Flow
+    subgraph "Error Handling Pattern"
+        A4[Any function call] --> B4{Error occurred?}
+        B4 -->|Yes| C4[Wrap error with context]
+        C4 --> D4[Return error to caller]
+        D4 --> E4[Caller checks error]
+        E4 --> F4[Return HTTP error response]
+        B4 -->|No| G4[Continue normal flow]
+    end

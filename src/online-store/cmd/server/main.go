@@ -11,13 +11,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"online-store/internal/config"
 	"online-store/internal/database"
 	"online-store/internal/handlers"
 	"online-store/internal/middleware"
 	"online-store/internal/mqtt"
 	"online-store/internal/services"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -68,12 +69,12 @@ func main() {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		
+
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return
 		}
-		
+
 		c.Next()
 	})
 
@@ -85,9 +86,9 @@ func main() {
 		api.POST("/login", authHandler.Login)
 
 		// Product routes - some need authentication, some don't
-		api.GET("/products", productHandler.GetProducts)       // Anyone can view products
-		api.GET("/products/:id", productHandler.GetProduct)    // Anyone can view a product
-		
+		api.GET("/products", productHandler.GetProducts)    // Anyone can view products
+		api.GET("/products/:id", productHandler.GetProduct) // Anyone can view a product
+
 		// Protected routes - need to be logged in (JWT token required)
 		protected := api.Group("/")
 		protected.Use(middleware.AuthRequired(cfg.JWTSecret)) // Check if user is logged in

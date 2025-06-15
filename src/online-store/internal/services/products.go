@@ -1,6 +1,15 @@
-
 // internal/services/products.go
 // This file contains product-related business logic
+
+package services
+
+import (
+	"database/sql"
+	"fmt"
+	"online-store/internal/models"
+	"online-store/internal/mqtt"
+	"time"
+)
 
 // ProductService handles product operations
 type ProductService struct {
@@ -27,7 +36,7 @@ func (s *ProductService) GetProducts() ([]models.Product, error) {
 	defer rows.Close() // Always close rows when done
 
 	var products []models.Product
-	
+
 	// Iterate through all rows
 	for rows.Next() {
 		var product models.Product
@@ -62,7 +71,7 @@ func (s *ProductService) GetProduct(id int) (*models.Product, error) {
 		&product.StockQuantity,
 		&product.CreatedAt,
 	)
-	
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("product not found")
@@ -100,7 +109,7 @@ func (s *ProductService) CreateProduct(req models.ProductRequest) (*models.Produ
 		Name:      product.Name,
 		Timestamp: time.Now().Unix(),
 	}
-	
+
 	if err := s.mqttClient.Publish("product/created", event); err != nil {
 		fmt.Printf("Failed to publish product created event: %v", err)
 	}
@@ -126,7 +135,7 @@ func (s *ProductService) UpdateProduct(id int, req models.ProductRequest) (*mode
 
 	// Publish MQTT event
 	event := struct {
-		ProductID int   `json:"product_id"`
+		ProductID int    `json:"product_id"`
 		Name      string `json:"name"`
 		Timestamp int64  `json:"timestamp"`
 	}{
@@ -134,7 +143,7 @@ func (s *ProductService) UpdateProduct(id int, req models.ProductRequest) (*mode
 		Name:      product.Name,
 		Timestamp: time.Now().Unix(),
 	}
-	
+
 	if err := s.mqttClient.Publish("product/updated", event); err != nil {
 		fmt.Printf("Failed to publish product updated event: %v", err)
 	}
@@ -168,7 +177,7 @@ func (s *ProductService) UpdateStock(productID, newStock int) error {
 			ReorderLevel: 10,
 			Timestamp:    time.Now().Unix(),
 		}
-		
+
 		if err := s.mqttClient.Publish("inventory/low_stock", alert); err != nil {
 			fmt.Printf("Failed to publish low stock alert: %v", err)
 		}

@@ -1,0 +1,70 @@
+graph TB
+    %% External clients
+    Client[Web Client/Mobile App]
+    MQTT_Client[External MQTT Client]
+    
+    %% Main services
+    subgraph "Docker Containers"
+        API[Go API Server\n:8080]
+        DB[(MariaDB Database\n:3306)]
+        MQTT[MQTT Broker\n:1883]
+    end
+    
+    %% API Internal Structure
+    subgraph "Go API Internals"
+        Router[Gin Router\nHTTP Handler]
+        Auth[Auth Middleware\nJWT Validation]
+        Handlers[HTTP Handlers\nauth.go, products.go, orders.go]
+        Services[Business Logic\nServices Layer]
+        Models[Data Models\nUser, Product, Order]
+        MQTT_Client_Internal[MQTT Client\nPublisher/Subscriber]
+    end
+    
+    %% Flow connections
+    Client -->|HTTP Requests| API
+    API --> Router
+    Router --> Auth
+    Auth --> Handlers
+    Handlers --> Services
+    Services --> Models
+    Services --> DB
+    Services --> MQTT_Client_Internal
+    MQTT_Client_Internal --> MQTT
+    MQTT --> MQTT_Client
+    
+    %% Database tables
+    subgraph "Database Tables"
+        Users[users table]
+        Products[products table]
+        Orders[orders table]
+    end
+    
+    DB --> Users
+    DB --> Products
+    DB --> Orders
+    
+    %% MQTT Topics
+    subgraph "MQTT Topics"
+        UserEvents[user/registered\nuser/login]
+        ProductEvents[product/created\nproduct/updated]
+        OrderEvents[order/created\norder/status_changed]
+        InventoryEvents[inventory/update\ninventory/low_stock]
+        PaymentEvents[payment/confirmed]
+    end
+    
+    MQTT --> UserEvents
+    MQTT --> ProductEvents
+    MQTT --> OrderEvents
+    MQTT --> InventoryEvents
+    MQTT --> PaymentEvents
+    
+    %% Styling
+    classDef service fill:#e1f5fe
+    classDef storage fill:#f3e5f5
+    classDef external fill:#e8f5e8
+    classDef internal fill:#fff3e0
+    
+    class API,MQTT service
+    class DB,Users,Products,Orders storage
+    class Client,MQTT_Client external
+    class Router,Auth,Handlers,Services,Models,MQTT_Client_Internal internal

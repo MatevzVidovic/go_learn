@@ -1,6 +1,15 @@
-
 // internal/handlers/products.go
 // This file contains HTTP handlers for product endpoints
+
+package handlers
+
+import (
+	"net/http"
+	"online-store/internal/models"
+	"online-store/internal/services"
+
+	"github.com/gin-gonic/gin"
+)
 
 // ProductHandler handles product HTTP requests
 type ProductHandler struct {
@@ -67,7 +76,7 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 // @Router /api/products [post]
 func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	var req models.ProductRequest
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

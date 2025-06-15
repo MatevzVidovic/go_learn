@@ -1,6 +1,17 @@
-
 // internal/handlers/orders.go
 // This file contains HTTP handlers for order endpoints
+
+package handlers
+
+import (
+	"fmt"
+	"net/http"
+	"online-store/internal/models"
+	"online-store/internal/services"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+)
 
 // OrderHandler handles order HTTP requests
 type OrderHandler struct {
@@ -107,14 +118,14 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 func getIDFromParam(c *gin.Context, param string) (int, error) {
 	// strconv package is used to convert strings to other types
 	idStr := c.Param(param)
-	
+
 	// Convert string to integer
 	// ParseInt(string, base, bitSize) - base 10 = decimal, bitSize 0 = int
 	id, err := strconv.ParseInt(idStr, 10, 0)
 	if err != nil {
 		return 0, err
 	}
-	
+
 	return int(id), nil
 }
 

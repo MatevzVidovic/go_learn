@@ -1,6 +1,9 @@
-
 // internal/models/order.go
 // Order represents a customer order
+
+package models
+
+import "time"
 
 // Order represents a customer's order
 type Order struct {
@@ -21,13 +24,13 @@ type OrderRequest struct {
 
 // OrderResponse includes product information with the order
 type OrderResponse struct {
-	ID           int       `json:"id"`
-	ProductID    int       `json:"product_id"`
-	ProductName  string    `json:"product_name"`
-	Quantity     int       `json:"quantity"`
-	TotalCents   int       `json:"total_cents"`
-	Status       string    `json:"status"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID          int       `json:"id"`
+	ProductID   int       `json:"product_id"`
+	ProductName string    `json:"product_name"`
+	Quantity    int       `json:"quantity"`
+	TotalCents  int       `json:"total_cents"`
+	Status      string    `json:"status"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 // TotalInDollars returns the total price in dollars
@@ -54,19 +57,19 @@ type ProductCreatedEvent struct {
 
 // OrderCreatedEvent is published when a new order is placed
 type OrderCreatedEvent struct {
-	OrderID    int    `json:"order_id"`
-	UserID     int    `json:"user_id"`
-	ProductID  int    `json:"product_id"`
-	Quantity   int    `json:"quantity"`
-	TotalCents int    `json:"total_cents"`
-	Timestamp  int64  `json:"timestamp"`
+	OrderID    int   `json:"order_id"`
+	UserID     int   `json:"user_id"`
+	ProductID  int   `json:"product_id"`
+	Quantity   int   `json:"quantity"`
+	TotalCents int   `json:"total_cents"`
+	Timestamp  int64 `json:"timestamp"`
 }
 
 // LowStockAlert is published when product stock is low
 type LowStockAlert struct {
-	ProductID     int    `json:"product_id"`
-	ProductName   string `json:"product_name"`
-	CurrentStock  int    `json:"current_stock"`
-	ReorderLevel  int    `json:"reorder_level"`
-	Timestamp     int64  `json:"timestamp"`
+	ProductID    int    `json:"product_id"`
+	ProductName  string `json:"product_name"`
+	CurrentStock int    `json:"current_stock"`
+	ReorderLevel int    `json:"reorder_level"`
+	Timestamp    int64  `json:"timestamp"`
 }
